@@ -2,7 +2,7 @@ import * as tf from '@tensorflow/tfjs';
 
 const tablero = document.getElementById('tablero');
 const restartButton = document.getElementById('btnRestart');
-const btnPredecir = document.getElementById('btnPredecir');
+// const btnPredecir = document.getElementById('btnPredecir');
 
 let currentPlayer = 1;
 let movesPlayed = 0;
@@ -115,20 +115,23 @@ function checkMove(index) {
 }
 
 function playerClick(cell, index) {
+  // validar que la celda no este vacia
+  if (!cell) return false;
+
   let value = cell.children[0].innerHTML;
   if (isGameStarted && value === '') {
     movesPlayed++;
     if (currentPlayer === 1) {
       cell.children[0].innerHTML = 'X';
       checkMove(index);
-      valoresTablero[index] = 1;
+      valoresTablero[index] = -1;
       setTimeout(() => {
         predecirJugada();
       }, 100);
     } else if (currentPlayer === 2) {
       cell.children[0].innerHTML = 'O';
       checkMove(index);
-      valoresTablero[index] = -1;
+      valoresTablero[index] = 1;
     }
 
     if (movesPlayed === 9 && isGameStarted) {
@@ -192,12 +195,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
   restartButton.addEventListener('click', function () {
     restartGame();
+    // resetear variable
+    valoresTablero = [0, 0, 0, 0, 0, 0, 0, 0, 0];
   });
 
   //boton predecir
-  btnPredecir.addEventListener('click', function () {
-    // console.log(valoresTablero);
-  });
+  // btnPredecir.addEventListener('click', function () {
+  //   // console.log(valoresTablero);
+  // });
 });
 
 const cargarModelo = () => {
@@ -212,22 +217,33 @@ const cargarModelo = () => {
 };
 
 const predecirJugada = () => {
+  // console.log(valoresTablero);
   const valoresX = tf.tensor(valoresTablero);
 
   const matches = tf.stack([valoresX]);
 
   const result = modelo.predict(matches);
 
-  const resultArray = result.arraySync();
-  const elementoMayor = result.max().arraySync();
-  const index = resultArray[0].indexOf(elementoMayor);
+  const resultArray = result.arraySync()[0];
+  // console.log(resultArray);
 
-  console.log(resultArray);
-  console.log(elementoMayor);
-  console.log(index);
+  // obtener celdas del tablero y verificar si estan vacias y sino asginarle 0 a su valor correspondiente en el array
+  for (let i = 0; i < tablero.children.length; i++) {
+    if (tablero.children[i].children[0].innerHTML !== '') {
+      resultArray[i] = 0;
+    }
+  }
+
+  const elementoMayor = Math.max(...resultArray);
+  const index = resultArray.indexOf(elementoMayor);
+
+  // console.log(resultArray);
+  // console.log(elementoMayor);
+  // console.log(index);
 
   // encontrar la celda que corresponde al indice
-
   const cell = tablero.children[index];
+
   playerClick(cell, index);
+  console.log(valoresTablero);
 };
